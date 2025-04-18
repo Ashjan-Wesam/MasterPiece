@@ -7,6 +7,8 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ResetPasswordController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\StoreController;
+use App\Http\Controllers\Owner\CategoryController;
+use App\Http\Controllers\Owner\ProductController;
 
 /*
 |--------------------------------------------------------------------------
@@ -18,6 +20,7 @@ use App\Http\Controllers\Admin\StoreController;
 | be assigned to the "api" middleware group. Make something great!
 |
 */
+
 Route::post('/register-customer', [AuthController::class, 'registerCustomer']);
 Route::post('/register-owner', [AuthController::class, 'registerOwner']);
 Route::post('/login', [AuthController::class, 'login']);
@@ -71,3 +74,29 @@ Route::middleware(['auth:sanctum', 'isAdmin'])->prefix('admin')->group(function 
     Route::put('/stores/{id}', [StoreController::class, 'update']);
     Route::delete('/stores/{id}', [StoreController::class, 'destroy']);
 });
+
+
+Route::get('/stores', [StoreController::class, 'publicIndex']);
+
+Route::middleware(['auth:sanctum'])->group(function () {
+
+    Route::post('/owner/products', [ProductController::class, 'store']);
+    Route::get('/owner/categories/{id}', [CategoryController::class, 'show']);
+    
+    Route::put('/owner/categories/{id}', [CategoryController::class, 'update']);
+    Route::delete('/owner/categories/{id}', [CategoryController::class, 'destroy']);
+
+    Route::get('/owner/products',  [ProductController::class, 'index']);
+    Route::get('/owner/products/{id}', [ProductController::class, 'show']);
+   
+    Route::put('/owner/products/{id}', [ProductController::class, 'update']);
+    Route::delete('/owner/products/{id}', [ProductController::class, 'destroy']);
+    Route::get('/owner/my-categories',  [CategoryController::class, 'myCategories']);
+
+
+});
+Route::post('/owner/categories', [CategoryController::class, 'store']);
+Route::get('/owner/categories',  [CategoryController::class, 'index']);
+
+Route::post('/owner/categories/attach', [CategoryController::class, 'attachToMyStore']); 
+

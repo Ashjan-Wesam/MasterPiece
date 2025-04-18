@@ -5,21 +5,27 @@ namespace App\Http\Controllers\Owner;
 use App\Http\Controllers\Controller;
 use App\Models\Product;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class ProductController extends Controller
 {
-
     public function index()
     {
-        $ownerId = auth()->user()->id;
-        $products = Product::where('store_id', $ownerId)->get(); 
+        $store = Auth::user()->stores;
+
+        $products = Product::where('store_id', $store->id)->get();
+
         return response()->json($products);
     }
 
     public function show($id)
     {
-        $ownerId = auth()->user()->id;
-        $product = Product::where('store_id', $ownerId)->findOrFail($id); 
+        $product = Product::findOrFail($id);
+
+        if ($product->store_id != Auth::user()->store->id) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
         return response()->json($product);
     }
 
@@ -34,6 +40,8 @@ class ProductController extends Controller
             'image_url' => 'nullable|string',
         ]);
 
+        $store = Auth::user()->stores;
+
         $product = Product::create([
             'name' => $request->name,
             'description' => $request->description,
@@ -41,16 +49,19 @@ class ProductController extends Controller
             'stock_quantity' => $request->stock_quantity,
             'category_id' => $request->category_id,
             'image_url' => $request->image_url,
-            'store_id' => auth()->user()->store->id, 
+            'store_id' => $store->id,
         ]);
 
-        return response()->json(['message' => 'Product created successfully', 'product' => $product], 201);
+        return response()->json(['message' => 'Product created successfully', 'product' => $product]);
     }
 
     public function update(Request $request, $id)
     {
-        $ownerId = auth()->user()->id;
-        $product = Product::where('store_id', $ownerId)->findOrFail($id); 
+        $product = Product::findOrFail($id);
+
+        if ($product->store_id != Auth::user()->store->id) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
 
         $request->validate([
             'name' => 'sometimes|required|string|max:255',
@@ -61,23 +72,23 @@ class ProductController extends Controller
             'image_url' => 'nullable|string',
         ]);
 
-        $product->update([
-            'name' => $request->name ?? $product->name,
-            'description' => $request->description ?? $product->description,
-            'price' => $request->price ?? $product->price,
-            'stock_quantity' => $request->stock_quantity ?? $product->stock_quantity,
-            'category_id' => $request->category_id ?? $product->category_id,
-            'image_url' => $request->image_url ?? $product->image_url,
-        ]);
+        $product->update($request->only([
+            'name', 'description', 'price', 'stock_quantity', 'category_id', 'image_url'
+        ]));
 
         return response()->json(['message' => 'Product updated successfully', 'product' => $product]);
     }
 
     public function destroy($id)
     {
-        $ownerId = auth()->user()->id;
-        $product = Product::where('store_id', $ownerId)->findOrFail($id);
+        $product = Product::findOrFail($id);
+
+        if ($product->store_id != Auth::user()->store->id) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
         $product->delete();
+
         return response()->json(['message' => 'Product deleted successfully']);
     }
 }
