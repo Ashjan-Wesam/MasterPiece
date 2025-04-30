@@ -16,44 +16,90 @@ class UserController extends Controller
     }
 
     public function store(Request $request)
-    {
-        $request->validate([
-            'full_name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users',
-            'phone_number' => 'required|string',
-            'password' => 'required|min:6',
-            'role' => 'required|in:admin,customer,owner',
-            'status' => 'required|in:active,inactive',
+{
+    $messages = [
+        'full_name.required' => 'Full name is required.',
+        'full_name.string' => 'Full name must be a string.',
+        'email.required' => 'Email is required.',
+        'email.email' => 'Email format is invalid.',
+        'email.unique' => 'This email is already taken.',
+        'phone_number.required' => 'Phone number is required.',
+        'phone_number.regex' => 'Phone number must start with 077, 078, or 079 and be exactly 10 digits.',
+        'password.required' => 'Password is required.',
+        'password.min' => 'Password must be at least 6 characters long.',
+        'password.regex' => 'Password must start with an uppercase letter and include at least one special symbol.',
+        'role.required' => 'Role is required.',
+        'role.in' => 'Role must be either admin, owner, or customer.',
+        'status.required' => 'Status is required.',
+        'status.in' => 'Status must be either active or inactive.',
+        'profile_picture.image' => 'Profile picture must be an image.',
+        'profile_picture.mimes' => 'Profile picture must be a file of type: jpeg, png, jpg, gif.',
+        'logo_url.image' => 'Logo must be an image.',
+        'logo_url.mimes' => 'Logo must be a file of type: jpeg, png, jpg, gif.',
+    ];
+
+    $rules = [
+        'full_name' => ['required', 'string', 'max:255'],
+        'email' => ['required', 'email', 'max:255', 'unique:users,email'],
+        'phone_number' => ['required', 'regex:/^(077|078|079)[0-9]{7}$/'],
+        'password' => [
+            'required',
+            'string',
+            'min:6',
+            'regex:/^[A-Z][A-Za-z0-9!@#$%^&*()_+=\-{}\[\]:;"\'<>,.?\/\\|`~]{5,}$/',
+            'regex:/[!@#$%^&*()_+=\-{}\[\]:;"\'<>,.?\/\\|`~]/'
+        ],
+        'role' => ['required', 'in:admin,owner,customer'],
+        'status' => ['required', 'in:active,inactive'],
+        'profile_picture' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif'],
+    ];
+
+    if ($request->role === 'owner') {
+        $rules = array_merge($rules, [
+            'store_name' => ['required', 'string', 'max:255'],
+            'description' => ['nullable', 'string'],
+            'logo_url' => ['required', 'image', 'mimes:jpeg,png,jpg,gif'],
         ]);
+    }
 
-        $user = User::create([
-            'full_name' => $request->full_name,
-            'email' => $request->email,
-            'phone_number' => $request->phone_number,
-            'password' => Hash::make($request->password),
-            'role' => $request->role,
-            'status' => $request->status,
-            'profile_picture' => $request->profile_picture ?? null,
-            'shipping_address' => $request->shipping_address ?? null,
-        ]);
+    $request->validate($rules, $messages);
 
-        if ($user->role === 'owner') {
-            $request->validate([
-                'store_name' => 'required|string',
-                'description' => 'nullable|string',
-                'logo_url' => 'nullable|string',
-            ]);
+    $profilePicturePath = null;
+    if ($request->hasFile('profile_picture')) {
+        $profilePicturePath = uniqid() . '-' . $request->profile_picture->getClientOriginalName();
+        $request->profile_picture->move(public_path('storage/profile'), $profilePicturePath);
+    }
 
-            Store::create([
-                'store_name' => $request->store_name,
-                'description' => $request->description,
-                'logo_url' => $request->logo_url,
-                'owner_id' => $user->id,
-            ]);
+    $user = User::create([
+        'full_name' => $request->full_name,
+        'email' => $request->email,
+        'phone_number' => $request->phone_number,
+        'password' => Hash::make($request->password),
+        'role' => $request->role,
+        'status' => $request->status,
+        'profile_picture' => $profilePicturePath,
+        'shipping_address' => $request->shipping_address ?? null,
+    ]);
+
+    if ($user->role === 'owner') {
+        $logoPath = null;
+
+        if ($request->hasFile('logo_url')) {
+            $logoPath = uniqid() . '-' . $request->logo_url->getClientOriginalName();
+            $request->logo_url->move(public_path('storage/logo'), $logoPath);
         }
 
-        return response()->json(['message' => 'User created successfully', 'user' => $user], 201);
+        Store::create([
+            'store_name' => $request->store_name,
+            'description' => $request->description,
+            'logo_url' => $logoPath,
+            'owner_id' => $user->id,
+        ]);
     }
+
+    return response()->json(['message' => 'User created successfully', 'user' => $user], 201);
+}
+
 
     public function show($id)
     {
@@ -64,16 +110,78 @@ class UserController extends Controller
     public function update(Request $request, $id)
     {
         $user = User::findOrFail($id);
-
-        $request->validate([
+    
+        $messages = [
+            'full_name.required' => 'Full name is required.',
+            'email.required' => 'Email is required.',
+            'email.email' => 'Email format is invalid.',
+            'email.unique' => 'This email is already taken.',
+            'phone_number.required' => 'Phone number is required.',
+            'phone_number.regex' => 'Phone number must start with 077, 078, or 079 and be exactly 10 digits.',
+            'password.min' => 'Password must be at least 6 characters long.',
+            'password.regex' => 'Password must start with an uppercase letter and include at least one special symbol.',
+            'role.required' => 'Role is required.',
+            'role.in' => 'Role must be either admin, owner, or customer.',
+            'status.required' => 'Status is required.',
+            'status.in' => 'Status must be either active or inactive.',
+            'profile_picture.image' => 'Profile picture must be an image.',
+            'profile_picture.mimes' => 'Profile picture must be a file of type: jpeg, png, jpg, gif.',
+            'logo_url.image' => 'Logo must be an image.',
+            'logo_url.mimes' => 'Logo must be a file of type: jpeg, png, jpg, gif.',
+        ];
+    
+        $rules = [
             'full_name' => 'sometimes|required|string|max:255',
             'email' => "sometimes|required|email|unique:users,email,{$id}",
-            'phone_number' => 'sometimes|required|string',
-            'password' => 'nullable|min:6',
+            'phone_number' => 'sometimes|required|string|regex:/^(077|078|079)[0-9]{7}$/',
+            'password' => [
+                'nullable',
+                'string',
+                'min:6',
+                'regex:/^[A-Z][A-Za-z0-9!@#$%^&*()_+=\-{}\[\]:;"\'<>,.?\/\\|`~]{5,}$/',
+                'regex:/[!@#$%^&*()_+=\-{}\[\]:;"\'<>,.?\/\\|`~]/'
+            ],
             'role' => 'sometimes|required|in:admin,customer,owner',
             'status' => 'sometimes|required|in:active,inactive',
-        ]);
-
+            'profile_picture' => 'nullable|image|mimes:jpeg,png,jpg,gif',
+            'logo_url' => 'nullable|image|mimes:jpeg,png,jpg,gif',
+        ];
+    
+        // التحقق من الصحة
+        $request->validate($rules, $messages);
+    
+        // التعامل مع رفع صورة البروفايل
+        $profilePicturePath = $user->profile_picture; // الافتراضي الصورة القديمة
+        if ($request->hasFile('profile_picture')) {
+            // حذف الصورة القديمة
+            if ($user->profile_picture && file_exists(public_path('storage/profile/' . $user->profile_picture))) {
+                unlink(public_path('storage/profile/' . $user->profile_picture));
+            }
+            // رفع الصورة الجديدة
+            $profilePicturePath = uniqid() . '-' . $request->profile_picture->getClientOriginalName();
+            $request->profile_picture->move(public_path('storage/profile'), $profilePicturePath);
+        }
+    
+        // التعامل مع رفع لوغو المتجر (لو المستخدم Owner وعنده متجر)
+        $store = $user->role === 'owner' ? $user->store : null; // تأكد انه owner وله store
+        $logoPath = $store?->logo_url; // safe navigation
+    
+        if ($request->hasFile('logo_url') && $store) {
+            // حذف اللوغو القديم
+            if ($store->logo_url && file_exists(public_path('storage/logo/' . $store->logo_url))) {
+                unlink(public_path('storage/logo/' . $store->logo_url));
+            }
+            // رفع اللوغو الجديد
+            $logoPath = uniqid() . '-' . $request->logo_url->getClientOriginalName();
+            $request->logo_url->move(public_path('storage/logo'), $logoPath);
+    
+            // تحديث بيانات اللوغو
+            $store->update([
+                'logo_url' => $logoPath,
+            ]);
+        }
+    
+        // تحديث بيانات المستخدم
         $user->update([
             'full_name' => $request->full_name ?? $user->full_name,
             'email' => $request->email ?? $user->email,
@@ -81,12 +189,13 @@ class UserController extends Controller
             'password' => $request->password ? Hash::make($request->password) : $user->password,
             'role' => $request->role ?? $user->role,
             'status' => $request->status ?? $user->status,
-            'profile_picture' => $request->profile_picture ?? $user->profile_picture,
+            'profile_picture' => $profilePicturePath,
             'shipping_address' => $request->shipping_address ?? $user->shipping_address,
         ]);
-
+    
         return response()->json(['message' => 'User updated successfully', 'user' => $user]);
     }
+    
 
     public function destroy($id)
     {
