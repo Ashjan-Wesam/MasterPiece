@@ -22,19 +22,9 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Owner\OwnerOrderController;
 use App\Http\Controllers\Owner\OwnerSiteReviewController;
 use App\Http\Controllers\User\HomeController;
+use App\Http\Controllers\Admin\AdminOrderController;
+use App\Http\Controllers\Owner\OwnerDashboardController;
 
-
-
-/*
-|--------------------------------------------------------------------------
-| API Routes
-|--------------------------------------------------------------------------
-|
-| Here is where you can register API routes for your application. These
-| routes are loaded by the RouteServiceProvider and all of them will
-| be assigned to the "api" middleware group. Make something great!
-|
-*/
 
 Route::post('/register-customer', [AuthController::class, 'registerCustomer']);
 Route::post('/register-owner', [AuthController::class, 'registerOwner']);
@@ -100,7 +90,87 @@ Route::middleware(['auth:sanctum', 'isAdmin'])->prefix('admin')->group(function 
 Route::get('/stores/{id}', [StoreController::class, 'show']);
 Route::get('/store-categories/{storeId}', [HomeController::class, 'getStoreCategories']);
 
+
+
+
+
+
+
+
 // Owner Routes
+
+ // 1- Owner Dashbooard 
+ Route::get('/owner/dashboard-stats', [DashboardController::class, 'index']);
+ Route::get('/all-categories',  [CategoryController::class, 'index']);
+
+ // Owner Protected Routes
+ Route::middleware('auth:sanctum')->prefix('owner')->group(function () {
+
+    // Categories Management Routes
+
+    Route::get('/categories/{id}', [CategoryController::class, 'show']);
+    Route::put('/categories/{id}', [CategoryController::class, 'update']);
+    Route::delete('/categories/{id}', [CategoryController::class, 'destroy']);
+    Route::get('/my-categories',  [CategoryController::class, 'myCategories']);
+
+    // Products Management Routes
+
+    // Orders Management Routes
+
+    Route::get('/orders', [OwnerOrderController::class, 'index']);
+    Route::post('/design-requests/{id}/update', [OwnerOrderController::class, 'updateDesignStatus']);
+    Route::post('/orders/{id}/complete', [OwnerOrderController::class, 'markOrderCompleted']);
+    Route::get('/orders-with-designs', [OwnerOrderController::class, 'designRequestsOnly']);
+
+    //Discounts Management Routes
+
+    //Reviews Management Routess
+
+
+    
+    Route::get('/dashboard/{storeId}', [OWnerDashboardController::class, 'index']);
+
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
  Route::middleware(['auth:sanctum'])->group(function () {
 
     Route::get('/cart/check-store/{productId}', [CartController::class, 'checkStoreMatch']);
@@ -191,7 +261,7 @@ Route::get('/owner/dashboard-stats', [DashboardController::class, 'index']);
 
 Route::get('/user/products', [ProductController::class, 'index']);
 
-use App\Http\Controllers\Admin\AdminOrderController;
+
 
 Route::middleware(['auth:sanctum'])->prefix('admin')->group(function () {
     Route::get('/orders', [AdminOrderController::class, 'index']);
@@ -214,16 +284,22 @@ Route::put('/design-requests/{designRequest}/status', [DesignRequestController::
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/reviews', [UserReviewController::class, 'store']);
     Route::get('/can-review/{productId}', [UserReviewController::class, 'canReview']);
-    Route::get('/related-products/{categoryId}/{storeId}', [UserProductController::class, 'related']);
+    
     Route::get('/', [\App\Http\Controllers\User\UserProfileController::class, 'getProfile']);
     Route::post('/update', [\App\Http\Controllers\User\UserProfileController::class, 'updateProfile']);
 });
 
 Route::get('/reviews/{productId}', [UserReviewController::class, 'index']);
-Route::get('/related-products/{categoryId}/{storeId}', [UserProductController::class, 'related']);
+Route::get('/related-products/{categoryId}/{storeId}/{productId}', [UserProductController::class, 'related']);
 
 
+use App\Http\Controllers\User\WishlistController;
 
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/wishlist', [WishlistController::class, 'index']);          
+    Route::post('/wishlist', [WishlistController::class, 'store']);         
+    Route::delete('/wishlist/{productId}', [WishlistController::class, 'destroy']); 
+});
 
 
 
@@ -232,7 +308,7 @@ Route::get('/related-products/{categoryId}/{storeId}', [UserProductController::c
 
 
 // Owner Routes
-use App\Http\Controllers\Owner\OwnerDashboardController;
+
 Route::middleware('auth:sanctum')->prefix('owner')->group(function () {
 
     // Orders Management Routes
@@ -246,4 +322,14 @@ Route::middleware('auth:sanctum')->prefix('owner')->group(function () {
 
 });
 
+Route::get('/stores/{storeId}/reviews', [UserReviewController::class, 'storeReviews']);
+Route::get('/stores/{storeId}/stat', [UserReviewController::class, 'stats']);
 
+Route::get('/stores/{storeId}/can-review', [UserReviewController::class, 'canReviewStore'])->middleware('auth:sanctum');
+
+Route::post('/stores/reviews', [UserReviewController::class, 'submitStoreReview'])->middleware('auth:sanctum');
+use App\Http\Controllers\Owner\StoreAndProductReviews;
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/owner/reviews', [StoreAndProductReviews::class, 'index']);
+});

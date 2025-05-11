@@ -12,19 +12,24 @@ use Carbon\Carbon;
 
 class ProductController extends Controller
 {
+    
     public function index()
-    {
-        $store     = Auth::user()->stores;
-        $products  = Product::where('store_id', $store->id)->get();
+{
+    $store = Auth::user()->stores;
 
-        return response()->json($products);
-    }
+    $products = Product::where('store_id', $store->id)
+                        ->with('category') 
+                        ->get();
 
-    public function show($id)
-    {
-        $product = Product::findOrFail($id);
-        return response()->json($product);
-    }
+    return response()->json($products);
+}
+
+   public function show($id)
+{
+    $product = Product::with('category')->findOrFail($id);
+    return response()->json($product);
+}
+
 
      public function store(Request $request)
     {

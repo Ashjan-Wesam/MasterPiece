@@ -49,4 +49,17 @@ class Store extends Model
     {
         return $this->hasMany(Discount::class);
     }
+
+    public function designRequests()
+{
+    return $this->hasManyThrough(
+        \App\Models\DesignRequest::class, 
+        \App\Models\Product::class,       
+        'store_id',                      
+        'product_id',                   
+        'id',  
+        'id'
+    );
+}
+
 }

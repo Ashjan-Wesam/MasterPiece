@@ -27,15 +27,17 @@ class UserProductController extends Controller
         return response()->json($products);
     }
 
-    public function related($categoryId, $storeId)
-{
-    $relatedProducts = Product::where('category_id', $categoryId)
-        ->where('store_id', $storeId)
-        ->latest()
-        ->take(6) 
-        ->get();
-
-    return response()->json($relatedProducts);
-}
+    public function related($categoryId, $storeId, $productId)
+    {
+        $relatedProducts = Product::where('category_id', $categoryId)
+            ->where('store_id', $storeId)
+            ->where('id', '!=', $productId) 
+            ->latest()
+            ->take(6)
+            ->get();
+    
+        return response()->json($relatedProducts);
+    }
+    
 
 }

@@ -18,18 +18,37 @@ class StoreController extends Controller
     
 
 
-
-public function show($id)
-{
-    $store = Store::with('owner', 'categories', 'products')->find($id);
-
-    if (!$store) {
-        return response()->json(['message' => 'Store not found'], 404);
+    public function show($id)
+    {
+        $store = Store::with([
+            'owner',
+            'categories',
+            'products.reviews', 
+            'reviews.user' 
+        ])->find($id);
+    
+        if (!$store) {
+            return response()->json(['message' => 'Store not found'], 404);
+        }
+    
+        $store->products->transform(function ($product) {
+            $reviews = $product->reviews;
+            $reviewsCount = $reviews->count();
+    
+            $averageRating = $reviewsCount > 0 
+                ? round($reviews->sum('rating') / $reviewsCount, 2)
+                : 0;
+    
+            $product->average_rating = $averageRating;
+            $product->reviews_count = $reviewsCount;
+    
+            return $product;
+        });
+    
+        return response()->json($store);
     }
-
-    return response()->json($store);
-}
-
+    
+    
 public function store(Request $request)
 {
     // تحقق من صحة البيانات
@@ -45,7 +64,6 @@ public function store(Request $request)
         'categories.*' => 'string|distinct|exists:categories,name', // التحقق من أن الفئات موجودة
     ]);
 
-    // تخزين صورة الملف الشخصي إذا كانت موجودة
     $image_path = null;
     if ($request->hasFile('profile_picture')) {
         $image_path = uniqid() . '-' . $request->name . '.' . $request->profile_picture->extension();
@@ -89,8 +107,6 @@ public function store(Request $request)
             $logoPath = uniqid() . '-' . $request->name . '.' . $request->logo_url->extension();
             $request->logo_url->move(public_path('storage/logo'), $logoPath);
         }
-
-        // إنشاء المتجر
         $store = Store::create([
             'store_name' => $request->store_name,
             'description' => $request->description,
@@ -98,13 +114,11 @@ public function store(Request $request)
             'owner_id' => $user->id,
         ]);
 
-        // ربط الفئات بالمتجر
         if ($storeCategories) {
             $store->categories()->attach($storeCategories);
         }
     }
 
-    // إرجاع الاستجابة بنجاح
     return response()->json([
         'message' => 'User created successfully',
         'user' => $user,

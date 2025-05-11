@@ -23,15 +23,12 @@ class OwnerDashboardController extends Controller
     
         $storeId = $store->id;
     
-        // عدد المنتجات
         $productsCount = Product::where('store_id', $storeId)->count();
     
-        // الطلبات المكتملة
         $completedOrdersCount = Order::where('store_id', $storeId)
                                     ->where('status', 'completed')
                                     ->count();
     
-        // الطلبات المعلقة
         $pendingOrdersCount = Order::where('store_id', $storeId)
                                   ->where('status', 'pending')
                                   ->count();

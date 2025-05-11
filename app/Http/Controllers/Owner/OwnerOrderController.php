@@ -52,22 +52,28 @@ class OwnerOrderController extends Controller
     }
 
     public function designRequestsOnly()
-{
-    $store = auth()->user()->stores;
-
-    if (!$store) {
-        return response()->json(['message' => 'Owner has no store.'], 403);
+    {
+        $store = auth()->user()->stores;  
+    
+        // استخدام flatMap لجلب طلبات التصميم مع معلومات المنتج
+        $designRequests = $store->products->flatMap(function ($product) {
+            // إضافة تفاصيل المنتج مع طلبات التصميم
+            return $product->designRequests->map(function ($designRequest) use ($product) {
+                return [
+                    'design_request' => $designRequest,
+                    'product' => $product,
+                ];
+            });
+        });
+    
+        if ($designRequests->isEmpty()) {
+            return response()->json(['message' => 'لا توجد طلبات تصميم حالياً'], 404);
+        }
+    
+        return response()->json($designRequests);
     }
+    
 
-    $orders = Order::with(['user', 'orderDetails.product.designRequests'])
-        ->whereHas('orderDetails.product', function ($query) use ($store) {
-            $query->where('store_id', $store->id)
-                  ->whereHas('designRequests');
-        })
-        ->get();
-
-    return response()->json($orders);
-}
 
 
 }

@@ -79,29 +79,28 @@ class CategoryController extends Controller
 
 
     
-public function update(Request $request, $categoryId)
+    public function update(Request $request, $categoryId)
 {
     $request->validate([
         'store_id' => 'required|exists:stores,id',
-        'new_category_id' => 'required|exists:categories,id',
+        'name' => 'required|string|max:255',
+        'description' => 'nullable|string|max:1000',
     ]);
 
-    $store = Store::findOrFail($request->store_id);
+    $category = Category::findOrFail($categoryId);
 
-    $store->categories()->detach($categoryId);
-    $store->categories()->attach($request->new_category_id);
-
-    Product::where('store_id', $store->id)
-        ->where('category_id', $categoryId)
-        ->update(['category_id' => $request->new_category_id]);
+    $category->update([
+        'name' => $request->name,
+        'description' => $request->description,
+    ]);
 
     return response()->json([
-        'message' => 'Category updated in pivot table and related products updated successfully',
+        'message' => 'Category updated successfully.',
+        'category' => $category,
     ]);
 }
 
-
-
+    
 
 public function destroy(Request $request, $categoryId)
 {
