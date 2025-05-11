@@ -1,29 +1,35 @@
 <?php
 
-
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
-use App\Http\Controllers\ResetPasswordController;
+use App\Http\Controllers\ResetPasswordController; 
+
+// Admin Controllers
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\StoreController;
 use App\Http\Controllers\Admin\ReviewController;
 use App\Http\Controllers\Admin\AdminCategoryController;
-use App\Http\Controllers\Admin\Controller;
+use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\AdminOrderController;
+
+// Owner Controllers
 use App\Http\Controllers\Owner\CategoryController;
 use App\Http\Controllers\Owner\DiscountController;
 use App\Http\Controllers\Owner\ProductController;
+use App\Http\Controllers\Owner\OwnerOrderController;
+use App\Http\Controllers\Owner\OwnerSiteReviewController;
+use App\Http\Controllers\Owner\OwnerDashboardController;
+use App\Http\Controllers\Owner\StoreAndProductReviews;
+
+// User Controllers
 use App\Http\Controllers\User\CartController;
 use App\Http\Controllers\User\OrderController;
 use App\Http\Controllers\User\DesignRequestController;
 use App\Http\Controllers\User\UserReviewController;
 use App\Http\Controllers\User\UserProductController;
-use App\Http\Controllers\Admin\DashboardController;
-use App\Http\Controllers\Owner\OwnerOrderController;
-use App\Http\Controllers\Owner\OwnerSiteReviewController;
 use App\Http\Controllers\User\HomeController;
-use App\Http\Controllers\Admin\AdminOrderController;
-use App\Http\Controllers\Owner\OwnerDashboardController;
+
 
 
 Route::post('/register-customer', [AuthController::class, 'registerCustomer']);
@@ -92,43 +98,49 @@ Route::get('/store-categories/{storeId}', [HomeController::class, 'getStoreCateg
 
 
 
-
-
-
-
-
 // Owner Routes
 
- // 1- Owner Dashbooard 
- Route::get('/owner/dashboard-stats', [DashboardController::class, 'index']);
- Route::get('/all-categories',  [CategoryController::class, 'index']);
+ // General Routes
+    Route::get('/owner/dashboard-stats', [DashboardController::class, 'index']);
+    Route::get('/all-categories',  [CategoryController::class, 'index']);
 
  // Owner Protected Routes
  Route::middleware('auth:sanctum')->prefix('owner')->group(function () {
+    
+
+    // Dashboard Route
+       Route::get('/dashboard/{storeId}', [OWnerDashboardController::class, 'index']);
 
     // Categories Management Routes
-
-    Route::get('/categories/{id}', [CategoryController::class, 'show']);
-    Route::put('/categories/{id}', [CategoryController::class, 'update']);
-    Route::delete('/categories/{id}', [CategoryController::class, 'destroy']);
-    Route::get('/my-categories',  [CategoryController::class, 'myCategories']);
+       Route::get('/categories/{id}', [CategoryController::class, 'show']);
+       Route::put('/categories/{id}', [CategoryController::class, 'update']);
+       Route::delete('/categories/{id}', [CategoryController::class, 'destroy']);
+       Route::get('/my-categories',  [CategoryController::class, 'myCategories']);
 
     // Products Management Routes
+        Route::get('/products',  [ProductController::class, 'index']);
+        Route::get('/products/{id}', [ProductController::class, 'show']);
+        Route::post('/products', [ProductController::class, 'store']);
+        Route::put('/products/{id}', [ProductController::class, 'update']);
+        Route::delete('/products/{id}', [ProductController::class, 'destroy']);
 
     // Orders Management Routes
-
-    Route::get('/orders', [OwnerOrderController::class, 'index']);
-    Route::post('/design-requests/{id}/update', [OwnerOrderController::class, 'updateDesignStatus']);
-    Route::post('/orders/{id}/complete', [OwnerOrderController::class, 'markOrderCompleted']);
-    Route::get('/orders-with-designs', [OwnerOrderController::class, 'designRequestsOnly']);
+       Route::get('/orders', [OwnerOrderController::class, 'index']);
+       Route::post('/design-requests/{id}/update', [OwnerOrderController::class, 'updateDesignStatus']);
+       Route::post('/orders/{id}/complete', [OwnerOrderController::class, 'markOrderCompleted']);
+       Route::get('/orders-with-designs', [OwnerOrderController::class, 'designRequestsOnly']);
 
     //Discounts Management Routes
+      Route::get('/discounts',  [DiscountController::class, 'index']);
+      Route::get('/discounts/{id}', [DiscountController::class, 'show']);
+      Route::post('/discounts', [DiscountController::class, 'store']);
+      Route::put('/discounts/{id}', [DiscountController::class, 'update']);
+      Route::delete('/discounts/{id}', [DiscountController::class, 'destroy']);
 
-    //Reviews Management Routess
-
-
-    
-    Route::get('/dashboard/{storeId}', [OWnerDashboardController::class, 'index']);
+    //Reviews Management Routes
+      Route::post('/site-reviews', [OwnerSiteReviewController::class, 'store']);
+      Route::get('/site-reviews', [OwnerSiteReviewController::class, 'index']);
+      Route::get('/owner/reviews', [StoreAndProductReviews::class, 'index']);
 
 });
 
@@ -178,29 +190,8 @@ Route::get('/store-categories/{storeId}', [HomeController::class, 'getStoreCateg
     Route::delete('/cart/clear', [CartController::class, 'clearCart']);
     Route::post('/cart/update-quantity', [CartController::class, 'updateQuantity']);
     
+
     
-    Route::get('/owner/categories/{id}', [CategoryController::class, 'show']);
-    Route::put('/owner/categories/{id}', [CategoryController::class, 'update']);
-    Route::delete('/owner/categories/{id}', [CategoryController::class, 'destroy']);
-    Route::get('/owner/my-categories',  [CategoryController::class, 'myCategories']);
-
-    Route::get('/owner/products',  [ProductController::class, 'index']);
-    Route::get('/owner/products/{id}', [ProductController::class, 'show']);
-    Route::post('/owner/products', [ProductController::class, 'store']);
-    Route::put('/owner/products/{id}', [ProductController::class, 'update']);
-    Route::delete('/owner/products/{id}', [ProductController::class, 'destroy']);
-    Route::post('/owner/products/apply-discounts', [ProductController::class, 'applyDiscounts']);
-    Route::get('/owner/discount-status', [ProductController::class, 'checkDiscountStatus']);
-
-
-    Route::get('/owner/discounts',  [DiscountController::class, 'index']);
-    Route::get('/owner/discounts/{id}', [DiscountController::class, 'show']);
-    Route::post('/owner/discounts', [DiscountController::class, 'store']);
-    Route::put('/owner/discounts/{id}', [DiscountController::class, 'update']);
-    Route::delete('/owner/discounts/{id}', [DiscountController::class, 'destroy']);
-
-    Route::post('/owner/site-reviews', [OwnerSiteReviewController::class, 'store']);
-    Route::get('/owner/site-reviews', [OwnerSiteReviewController::class, 'index']);
 
 
     
@@ -236,10 +227,6 @@ Route::get('/home', [HomeController::class, 'index']);
 
 Route::get('/stores', [StoreController::class, 'publicIndex']);
 
-
-Route::post('/owner/categories', [CategoryController::class, 'store']);
-Route::get('/owner/categories',  [CategoryController::class, 'index']); 
-Route::get('/owner/products/{id}', [ProductController::class, 'show']);
 
 
 Route::middleware('auth:sanctum')->group(function () {
@@ -306,30 +293,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
 
 
-
-// Owner Routes
-
-Route::middleware('auth:sanctum')->prefix('owner')->group(function () {
-
-    // Orders Management Routes
-
-    Route::get('/orders', [OwnerOrderController::class, 'index']);
-    Route::post('/design-requests/{id}/update', [OwnerOrderController::class, 'updateDesignStatus']);
-    Route::post('/orders/{id}/complete', [OwnerOrderController::class, 'markOrderCompleted']);
-    Route::get('/orders-with-designs', [OwnerOrderController::class, 'designRequestsOnly']);
-    
-     Route::get('/dashboard/{storeId}', [OWnerDashboardController::class, 'index']);
-
-});
-
 Route::get('/stores/{storeId}/reviews', [UserReviewController::class, 'storeReviews']);
 Route::get('/stores/{storeId}/stat', [UserReviewController::class, 'stats']);
 
 Route::get('/stores/{storeId}/can-review', [UserReviewController::class, 'canReviewStore'])->middleware('auth:sanctum');
 
 Route::post('/stores/reviews', [UserReviewController::class, 'submitStoreReview'])->middleware('auth:sanctum');
-use App\Http\Controllers\Owner\StoreAndProductReviews;
-
-Route::middleware('auth:sanctum')->group(function () {
-    Route::get('/owner/reviews', [StoreAndProductReviews::class, 'index']);
-});
