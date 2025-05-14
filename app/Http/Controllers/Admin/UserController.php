@@ -147,7 +147,6 @@ class UserController extends Controller
             'logo_url' => 'nullable|image|mimes:jpeg,png,jpg,gif',
         ];
     
-        // التحقق من الصحة
         $request->validate($rules, $messages);
     
         $profilePicturePath = $user->profile_picture; 
@@ -161,26 +160,24 @@ class UserController extends Controller
             $request->profile_picture->move(public_path('storage/profile'), $profilePicturePath);
         }
     
-        // التعامل مع رفع لوغو المتجر (لو المستخدم Owner وعنده متجر)
-        $store = $user->role === 'owner' ? $user->store : null; // تأكد انه owner وله store
-        $logoPath = $store?->logo_url; // safe navigation
+        $store = $user->role === 'owner' ? $user->store : null;
+        $logoPath = $store?->logo_url; 
     
         if ($request->hasFile('logo_url') && $store) {
-            // حذف اللوغو القديم
+            
             if ($store->logo_url && file_exists(public_path('storage/logo/' . $store->logo_url))) {
                 unlink(public_path('storage/logo/' . $store->logo_url));
             }
-            // رفع اللوغو الجديد
+        
             $logoPath = uniqid() . '-' . $request->logo_url->getClientOriginalName();
             $request->logo_url->move(public_path('storage/logo'), $logoPath);
     
-            // تحديث بيانات اللوغو
+      
             $store->update([
                 'logo_url' => $logoPath,
             ]);
         }
     
-        // تحديث بيانات المستخدم
         $user->update([
             'full_name' => $request->full_name ?? $user->full_name,
             'email' => $request->email ?? $user->email,

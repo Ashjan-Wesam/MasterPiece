@@ -12,6 +12,8 @@ use App\Http\Controllers\Admin\ReviewController;
 use App\Http\Controllers\Admin\AdminCategoryController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\AdminOrderController;
+use App\Http\Controllers\Admin\ProductAdminController;
+
 
 // Owner Controllers
 use App\Http\Controllers\Owner\CategoryController;
@@ -84,10 +86,14 @@ Route::middleware(['auth:sanctum', 'isAdmin'])->prefix('admin')->group(function 
 
     // Category Routes
     
-    Route::post('/stores', [StoreController::class, 'store']);
-    Route::get('/stores/{id}', [StoreController::class, 'show']);
-    Route::put('/stores/{id}', [StoreController::class, 'update']);
-    Route::delete('/stores/{id}', [StoreController::class, 'destroy']);
+   Route::get('/categories', [AdminCategoryController::class, 'index']);
+    Route::post('/categories', [AdminCategoryController::class, 'store']);
+    Route::get('/categories/{id}', [AdminCategoryController::class, 'show']);
+    Route::put('/categories/{id}', [AdminCategoryController::class, 'update']);
+    Route::delete('/categories/{id}', [AdminCategoryController::class, 'destroy']);
+
+    //Products Routes
+     Route::apiResource('products', ProductAdminController::class);
 });
 
 Route::get('/store-categories/{storeId}', [HomeController::class, 'getStoreCategories']);
