@@ -33,10 +33,21 @@ class DesignRequestController extends Controller
         return response()->json(['message' => 'Status updated.']);
     }
 
-    public function userRequests()
+ public function userRequests()
 {
-    $requests = DesignRequest::with('product')
+    $designIdsInCart = \App\Models\CartProduct::whereNotNull('design_request_id')
+        ->pluck('design_request_id')
+        ->toArray();
+
+    $designIdsInOrders = \App\Models\OrderDetail::whereNotNull('design_request_id')
+        ->pluck('design_request_id')
+        ->toArray();
+
+    $excludedDesignIds = array_merge($designIdsInCart, $designIdsInOrders);
+
+    $requests = \App\Models\DesignRequest::with('product')
         ->where('user_id', auth()->id())
+        ->whereNotIn('id', $excludedDesignIds)
         ->latest()
         ->get();
 

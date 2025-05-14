@@ -150,14 +150,13 @@ class UserController extends Controller
         // التحقق من الصحة
         $request->validate($rules, $messages);
     
-        // التعامل مع رفع صورة البروفايل
-        $profilePicturePath = $user->profile_picture; // الافتراضي الصورة القديمة
+        $profilePicturePath = $user->profile_picture; 
         if ($request->hasFile('profile_picture')) {
-            // حذف الصورة القديمة
+           
             if ($user->profile_picture && file_exists(public_path('storage/profile/' . $user->profile_picture))) {
                 unlink(public_path('storage/profile/' . $user->profile_picture));
             }
-            // رفع الصورة الجديدة
+           
             $profilePicturePath = uniqid() . '-' . $request->profile_picture->getClientOriginalName();
             $request->profile_picture->move(public_path('storage/profile'), $profilePicturePath);
         }

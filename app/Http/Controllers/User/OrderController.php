@@ -8,6 +8,9 @@ use App\Models\Order;
 use App\Models\OrderDetail;
 use App\Models\Payment;
 use Illuminate\Http\Request;
+use App\Models\Discount;
+use App\Models\Store;
+use Carbon\Carbon;
 
 class OrderController extends Controller
 {
@@ -21,25 +24,44 @@ public function checkout(Request $request)
         return response()->json(['message' => 'Cart is empty'], 400);
     }
 
+    $now = Carbon::now();
+
+    $storeId = $cart->cartProducts->first()->product->store_id;
+    $discount = Discount::where('store_id', $storeId)
+        ->where('start_date', '<=', $now)
+        ->where('end_date', '>=', $now)
+        ->first();
+
+    $cartTotal = $cart->cartProducts->sum(fn($item) => $item->price * $item->quantity);
+
+   
+    if ($discount) {
+        $discountAmount = ($cartTotal * $discount->discount_percentage) / 100;
+        $cartTotal -= $discountAmount;  
+    }
+
     DB::beginTransaction();
 
     try {
+
         $order = Order::create([
             'user_id' => $user->id,
-            'store_id' => $cart->cartProducts->first()->product->store_id, // أو حسب المنطق اللي بدك ياه
-            'total_price' => $cart->cartProducts->sum(fn($item) => $item->price * $item->quantity),
+            'store_id' => $storeId,
+            'total_price' => $cartTotal,  
             'status' => 'pending',
         ]);
 
-        foreach ($cart->cartProducts as $item) {
-            OrderDetail::create([
-                'order_id' => $order->id,
-                'product_id' => $item->product_id,
-                'quantity' => $item->quantity,
-                'unit_price' => $item->price,
-                'total_price' => $item->quantity * $item->price,
-            ]);
-        }
+       foreach ($cart->cartProducts as $item) {
+    OrderDetail::create([
+        'order_id' => $order->id,
+        'product_id' => $item->product_id,
+        'quantity' => $item->quantity,
+        'unit_price' => $item->price,
+        'total_price' => $item->quantity * $item->price,
+        'design_request_id' => $item->design_request_id, 
+    ]);
+}
+
 
         Payment::create([
             'order_id' => $order->id,
@@ -58,6 +80,7 @@ public function checkout(Request $request)
     }
 }
 
+
 public function index()
 {
     $user = auth()->user();
@@ -73,10 +96,14 @@ public function show($id)
 {
     $user = auth()->user();
 
-    $order = Order::with(['orderDetails.product', 'payment'])
-        ->where('id', $id)
-        ->where('user_id', $user->id)
-        ->first();
+    $order = Order::with([
+        'orderDetails.product',
+        'orderDetails.designRequest',
+        'payment'
+    ])
+    ->where('id', $id)
+    ->where('user_id', $user->id)
+    ->first();
 
     if (!$order) {
         return response()->json(['message' => 'Order not found'], 404);
@@ -84,6 +111,7 @@ public function show($id)
 
     return response()->json(['order' => $order]);
 }
+
 
 
 public function update(Request $request, $id)

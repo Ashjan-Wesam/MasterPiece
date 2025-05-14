@@ -15,6 +15,7 @@ class CartProduct extends Model
         'product_id',
         'quantity',
         'price',
+        'design_request_id',
     ];
 
     public function cart()
@@ -26,4 +27,10 @@ class CartProduct extends Model
     {
         return $this->belongsTo(Product::class);
     }
+
+public function designRequest()
+{
+    return $this->belongsTo(DesignRequest::class);
+}
+
 }

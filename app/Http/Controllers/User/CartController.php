@@ -8,6 +8,9 @@ use App\Models\CartProduct;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Models\Discount;
+use App\Models\Store;
+use Carbon\Carbon;
 
 
 class CartController extends Controller
@@ -34,36 +37,41 @@ class CartController extends Controller
         return response()->json(['match' => true]);
     }
 
-    // 2. Add product to cart
     public function addToCart(Request $request)
-    {
-        $request->validate([
-            'product_id' => 'required|exists:products,id',
-            'quantity' => 'required|integer|min:1'
+{
+    $request->validate([
+        'product_id' => 'required|exists:products,id',
+        'quantity' => 'required|integer|min:1',
+        'design_request_id' => 'nullable|exists:design_requests,id',
+    ]);
+
+    $user = Auth::user();
+    $product = Product::findOrFail($request->product_id);
+
+    // Get or create user's cart
+    $cart = $user->cart ?? Cart::create(['user_id' => $user->id, 'added_at' => now()]);
+
+    // Check if product already in cart with same design_request_id
+    $existing = $cart->cartProducts()
+        ->where('product_id', $product->id)
+        ->where('design_request_id', $request->design_request_id) // match by design if exists
+        ->first();
+
+    if ($existing) {
+        $existing->quantity += $request->quantity;
+        $existing->save();
+    } else {
+        $cart->cartProducts()->create([
+            'product_id' => $product->id,
+            'quantity' => $request->quantity,
+            'price' => $product->price,
+            'design_request_id' => $request->design_request_id,
         ]);
-
-        $user = Auth::user();
-        $product = Product::findOrFail($request->product_id);
-
-        // Get or create user's cart
-        $cart = $user->cart ?? Cart::create(['user_id' => $user->id, 'added_at' => now()]);
-
-        // Check if product already in cart
-        $existing = $cart->cartProducts()->where('product_id', $product->id)->first();
-
-        if ($existing) {
-            $existing->quantity += $request->quantity;
-            $existing->save();
-        } else {
-            $cart->cartProducts()->create([
-                'product_id' => $product->id,
-                'quantity' => $request->quantity,
-                'price' => $product->price
-            ]);
-        }
-
-        return response()->json(['message' => 'Product added to cart']);
     }
+
+    return response()->json(['message' => 'Product added to cart']);
+}
+
 
     // 3. Clear all products from the cart
     public function clearCart()
@@ -157,5 +165,24 @@ public function getCartCount()
 
         return response()->json(['count' => $count]);
     }
+public function checkStoreDiscount($storeId)
+{
+    $now = Carbon::now();
+
+    $discount = Discount::where('store_id', $storeId)
+        ->where('start_date', '<=', $now)
+        ->where('end_date', '>=', $now)
+        ->first();
+
+    if ($discount) {
+        return response()->json([
+            'active' => true,
+            'discount_percentage' => $discount->discount_percentage
+        ]);
+    }
+
+    return response()->json(['active' => false]);
+}
+
 
 }

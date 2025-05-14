@@ -10,19 +10,24 @@ use Illuminate\Http\Request;
 class OwnerOrderController extends Controller
 {
     public function index(Request $request)
-    {
-        $store = auth()->user()->stores;
+{
+    $store = auth()->user()->stores;
 
-        if (!$store) {
-            return response()->json(['message' => 'Owner has no store.'], 403);
-        }
-
-        $orders = Order::with(['user', 'orderDetails.product.designRequests'])
-            ->where('store_id', $store->id)
-            ->get();
-
-        return response()->json($orders);
+    if (!$store) {
+        return response()->json(['message' => 'Owner has no store.'], 403);
     }
+
+    $orders = Order::with([
+            'user',
+            'orderDetails.product',
+            'orderDetails.designRequest' 
+        ])
+        ->where('store_id', $store->id)
+        ->get();
+
+    return response()->json($orders);
+}
+
 
     public function updateDesignStatus(Request $request, $id)
     {
@@ -55,9 +60,8 @@ class OwnerOrderController extends Controller
     {
         $store = auth()->user()->stores;  
     
-        // استخدام flatMap لجلب طلبات التصميم مع معلومات المنتج
         $designRequests = $store->products->flatMap(function ($product) {
-            // إضافة تفاصيل المنتج مع طلبات التصميم
+          
             return $product->designRequests->map(function ($designRequest) use ($product) {
                 return [
                     'design_request' => $designRequest,

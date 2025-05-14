@@ -25,4 +25,14 @@ class DesignRequest extends Model
     {
         return $this->belongsTo(Product::class);
     }
+    public function cartProduct()
+{
+    return $this->hasOne(CartProduct::class);
+}
+
+public function orderDetail()
+{
+    return $this->hasOne(OrderDetail::class);
+}
+
 }

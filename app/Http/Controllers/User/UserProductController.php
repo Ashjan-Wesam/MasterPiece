@@ -27,6 +27,11 @@ class UserProductController extends Controller
         return response()->json($products);
     }
 
+       public function show($id)
+{
+    $product = Product::with('category')->findOrFail($id);
+    return response()->json($product);
+}
     public function related($categoryId, $storeId, $productId)
     {
         $relatedProducts = Product::where('category_id', $categoryId)

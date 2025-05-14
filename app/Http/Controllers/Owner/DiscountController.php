@@ -13,7 +13,7 @@ class DiscountController extends Controller
 {
     public function index()
     {
-        $store = Auth::user()->stores->first();
+        $store = Auth::user()->stores;
         $discounts = Discount::where('store_id', $store->id)->get();
         return response()->json($discounts);
     }
@@ -27,7 +27,7 @@ class DiscountController extends Controller
             'description' => 'nullable|string',
         ]);
 
-        $store = Auth::user()->stores->first();
+        $store = Auth::user()->stores;
 
         $discount = Discount::create([
             'store_id' => $store->id,
@@ -42,7 +42,7 @@ class DiscountController extends Controller
 
     public function show($id)
     {
-        $store = Auth::user()->stores->first();
+        $store = Auth::user()->stores;
         $discount = Discount::findOrFail($id);
 
         if ($discount->store_id !== $store->id) {

@@ -21,6 +21,7 @@ use App\Http\Controllers\Owner\OwnerOrderController;
 use App\Http\Controllers\Owner\OwnerSiteReviewController;
 use App\Http\Controllers\Owner\OwnerDashboardController;
 use App\Http\Controllers\Owner\StoreAndProductReviews;
+use App\Http\Controllers\Owner\StoreEditController;
 
 // User Controllers
 use App\Http\Controllers\User\CartController;
@@ -29,6 +30,7 @@ use App\Http\Controllers\User\DesignRequestController;
 use App\Http\Controllers\User\UserReviewController;
 use App\Http\Controllers\User\UserProductController;
 use App\Http\Controllers\User\HomeController;
+use App\Http\Controllers\User\UserProfileController;
 
 
 
@@ -56,16 +58,10 @@ Route::middleware(['auth:sanctum'])->group(function () {
     });
 });
 
-Route::middleware('auth:sanctum')->get('/profile', function (Request $request) {
-    return $request->user();
-});
-
-Route::middleware('auth:sanctum')->put('/profile', function (Request $request) {
-    $user = $request->user();
-    $user->update($request->only('name', 'email', 'phone'));
-    return response()->json(['message' => 'Profile updated successfully']);
-});
-
+Route::middleware('auth:sanctum')->get('/profile', [UserProfileController::class, 'show']);
+Route::middleware('auth:sanctum')->post('/profile/update', [UserProfileController::class, 'update']);
+Route::middleware('auth:sanctum')->post('/profile/change-password', [UserProfileController::class, 'changePassword']);
+Route::middleware('auth:sanctum')->post('/profile/verify-password', [UserProfileController::class, 'verifyCurrentPassword']);
 
 // Admin Routes
 
@@ -93,7 +89,7 @@ Route::middleware(['auth:sanctum', 'isAdmin'])->prefix('admin')->group(function 
     Route::put('/stores/{id}', [StoreController::class, 'update']);
     Route::delete('/stores/{id}', [StoreController::class, 'destroy']);
 });
-Route::get('/stores/{id}', [StoreController::class, 'show']);
+
 Route::get('/store-categories/{storeId}', [HomeController::class, 'getStoreCategories']);
 
 
@@ -103,6 +99,9 @@ Route::get('/store-categories/{storeId}', [HomeController::class, 'getStoreCateg
  // General Routes
     Route::get('/owner/dashboard-stats', [DashboardController::class, 'index']);
     Route::get('/all-categories',  [CategoryController::class, 'index']);
+    Route::get('/stores', [StoreController::class, 'publicIndex']);
+    Route::get('/single-product/{productId}',  [UserProductController::class, 'show']);
+    Route::get('/stores/{id}', [StoreController::class, 'show']);
 
  // Owner Protected Routes
  Route::middleware('auth:sanctum')->prefix('owner')->group(function () {
@@ -110,6 +109,10 @@ Route::get('/store-categories/{storeId}', [HomeController::class, 'getStoreCateg
 
     // Dashboard Route
        Route::get('/dashboard/{storeId}', [OWnerDashboardController::class, 'index']);
+
+    // Store Edit Routes
+       Route::get('/stores-info', [StoreEditController::class, 'show']);
+       Route::post('/stores/{id}/update', [StoreEditController::class, 'update']);
 
     // Categories Management Routes
        Route::get('/categories/{id}', [CategoryController::class, 'show']);
@@ -140,7 +143,8 @@ Route::get('/store-categories/{storeId}', [HomeController::class, 'getStoreCateg
     //Reviews Management Routes
       Route::post('/site-reviews', [OwnerSiteReviewController::class, 'store']);
       Route::get('/site-reviews', [OwnerSiteReviewController::class, 'index']);
-      Route::get('/owner/reviews', [StoreAndProductReviews::class, 'index']);
+      Route::get('/store-reviews', [StoreAndProductReviews::class, 'getStoreReviews']);
+      Route::get('/product-reviews', [StoreAndProductReviews::class, 'getProductReviews']);
 
 });
 
@@ -178,7 +182,7 @@ Route::get('/store-categories/{storeId}', [HomeController::class, 'getStoreCateg
 
 
 
-
+ Route::get('/cart/check-discount/{storeId}', [CartController::class, 'checkStoreDiscount']);
 
 
 
@@ -189,6 +193,7 @@ Route::get('/store-categories/{storeId}', [HomeController::class, 'getStoreCateg
     Route::post('/cart/add', [CartController::class, 'addToCart']);
     Route::delete('/cart/clear', [CartController::class, 'clearCart']);
     Route::post('/cart/update-quantity', [CartController::class, 'updateQuantity']);
+   
     
 
     
@@ -225,7 +230,7 @@ Route::get('/home', [HomeController::class, 'index']);
 
 
 
-Route::get('/stores', [StoreController::class, 'publicIndex']);
+
 
 
 

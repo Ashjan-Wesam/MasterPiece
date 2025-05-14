@@ -15,6 +15,7 @@ class OrderDetail extends Model
         'quantity',
         'unit_price',
         'total_price',
+        'design_request_id', 
     ];
 
     public function order()
@@ -25,5 +26,11 @@ class OrderDetail extends Model
     public function product()
     {
         return $this->belongsTo(Product::class);
+    
     }
+public function designRequest()
+{
+    return $this->belongsTo(DesignRequest::class);
+}
+
 }
