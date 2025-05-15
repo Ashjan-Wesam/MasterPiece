@@ -13,6 +13,7 @@ use App\Http\Controllers\Admin\AdminCategoryController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\AdminOrderController;
 use App\Http\Controllers\Admin\ProductAdminController;
+use App\Http\Controllers\Admin\AdminDiscountController;
 
 
 // Owner Controllers
@@ -94,6 +95,16 @@ Route::middleware(['auth:sanctum', 'isAdmin'])->prefix('admin')->group(function 
 
     //Products Routes
      Route::apiResource('products', ProductAdminController::class);
+
+    // Discount Routes
+    Route::apiResource('discounts', AdminDiscountController::class); 
+
+    // Reviews Routes
+    Route::get('/reviews', [ReviewController::class, 'index']);
+    Route::get('/reviews/product', [ReviewController::class, 'showProductReviews']);
+    Route::get('/reviews/store', [ReviewController::class, 'showStoreReviews']);
+    Route::get('/reviews/site', [ReviewController::class, 'showSiteReviews']);
+    Route::delete('/reviews/{type}/{id}', [ReviewController::class, 'destroy']);
 });
 
 Route::get('/store-categories/{storeId}', [HomeController::class, 'getStoreCategories']);
@@ -268,11 +279,6 @@ Route::middleware(['auth:sanctum'])->prefix('admin')->group(function () {
     Route::put('/orders/{id}', [AdminOrderController::class, 'update']);
     Route::delete('/orders/{id}', [AdminOrderController::class, 'destroy']);
 
-    Route::get('/reviews', [ReviewController::class, 'index']);
-    Route::get('/reviews/product', [ReviewController::class, 'showProductReviews']);
-    Route::get('/reviews/store', [ReviewController::class, 'showStoreReviews']);
-    Route::get('/reviews/site', [ReviewController::class, 'showSiteReviews']);
-    Route::delete('/reviews/{type}/{id}', [ReviewController::class, 'destroy']);
 });
 
 Route::middleware('auth:sanctum')->get('/my-design-requests', [DesignRequestController::class, 'userRequests']);
