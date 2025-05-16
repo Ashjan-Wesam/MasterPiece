@@ -34,16 +34,23 @@ $owner_id = $store->id;
 
         return response()->json(['message' => 'Review submitted successfully!']);
     }
-
-    public function index()
+public function index()
 {
     $user = Auth::user();
 
-    $storeIds = $user->stores->pluck('id');
-    $reviews = SiteReview::whereIn('owner_id', $storeIds)->latest()->get();
+    $store = $user->stores; 
 
+    if (!$store) {
+        return response()->json([]);
+    }
+
+    $reviews = SiteReview::where('owner_id', $store->id)
+                ->latest()
+                ->get();
 
     return response()->json($reviews);
 }
+
+
 
 }

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Store;
 use App\Models\User;
+use App\Models\Category;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
@@ -51,7 +52,6 @@ class StoreController extends Controller
     
 public function store(Request $request)
 {
-    // تحقق من صحة البيانات
     $validated = $request->validate([
         'full_name' => 'required|string|max:255',
         'email' => 'required|email|unique:users,email',
@@ -60,8 +60,9 @@ public function store(Request $request)
         'profile_picture' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
         'role' => 'required|in:admin,customer,owner',
         'status' => 'required|in:active,inactive',
-        'categories' => 'nullable|array', // التحقق من أن الفئات مصفوفة
-        'categories.*' => 'string|distinct|exists:categories,name', // التحقق من أن الفئات موجودة
+        'categories' => 'nullable|array', 
+       'categories.*' => 'integer|exists:categories,id',
+
     ]);
 
     $image_path = null;
@@ -70,7 +71,6 @@ public function store(Request $request)
         $request->profile_picture->move(public_path('storage/profile'), $image_path);
     }
 
-    // إنشاء المستخدم
     $user = User::create([
         'full_name' => $request->full_name,
         'email' => $request->email,
@@ -82,7 +82,6 @@ public function store(Request $request)
         'shipping_address' => $request->shipping_address ?? null,
     ]);
 
-    // التعامل مع الفئات إذا تم إرسالها
     $storeCategories = [];
     if ($request->categories) {
         foreach ($request->categories as $categoryName) {
@@ -124,20 +123,59 @@ public function store(Request $request)
         'user' => $user,
     ], 201);
 }
-    public function update(Request $request, $id)
-    {
-        $store = Store::findOrFail($id);
+ public function update(Request $request, $id)
+{
+    $store = Store::findOrFail($id);
 
-        $validated = $request->validate([
-            'store_name' => 'sometimes|string',
-            'description' => 'nullable|string',
-            'logo_url' => 'nullable|string',
-        ]);
+    $validated = $request->validate([
+        'store_name' => 'sometimes|string|max:255',
+        'description' => 'nullable|string',
+        'logo_url' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+        'categories' => 'nullable|array',
+        'categories.*' => 'integer|exists:categories,id',
 
-        $store->update($validated);
+        'full_name' => 'sometimes|string|max:255',
+        'email' => 'sometimes|email|max:255',
+        'phone_number' => 'sometimes|string|max:20',
+        'role' => 'sometimes|string|in:owner,admin',
+        'status' => 'sometimes|string|in:active,inactive',
+    ]);
 
-        return response()->json($store);
+    if ($request->hasFile('logo_url')) {
+        if ($store->logo_url && file_exists(public_path('storage/logo/' . $store->logo_url))) {
+            unlink(public_path('storage/logo/' . $store->logo_url));
+        }
+
+        $logoPath = uniqid() . '-' . $store->store_name . '.' . $request->logo_url->extension();
+        $request->logo_url->move(public_path('storage/logo'), $logoPath);
+        $validated['logo_url'] = $logoPath;
     }
+
+    // تحديث بيانات المتجر بدون الحقول الخاصة بالمالك (owner)
+    $storeFields = collect($validated)->only(['store_name', 'description', 'status', 'logo_url'])->toArray();
+    $store->update($storeFields);
+
+    // تحديث الفئات إن وجدت
+    if ($request->has('categories')) {
+        $store->categories()->sync($request->categories);
+    }
+
+    // تحديث بيانات المالك (Owner)
+    $owner = $store->owner;
+    if ($owner) {
+        $owner->full_name = $request->input('full_name', $owner->full_name);
+        $owner->email = $request->input('email', $owner->email);
+        $owner->phone_number = $request->input('phone_number', $owner->phone_number);
+        $owner->role = $request->input('role', $owner->role);
+        $owner->save();
+    }
+
+    return response()->json([
+        'message' => 'Store updated successfully',
+        'store' => $store,
+    ]);
+}
+
 
     public function destroy($id)
     {
