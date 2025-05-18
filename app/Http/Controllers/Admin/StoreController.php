@@ -19,36 +19,68 @@ class StoreController extends Controller
     
 
 
+    // public function show($id)
+    // {
+    //     $store = Store::with([
+    //         'owner',
+    //         'categories',
+    //         'products.reviews', 
+    //         'reviews.user' 
+    //     ])->find($id);
+    
+    //     if (!$store) {
+    //         return response()->json(['message' => 'Store not found'], 404);
+    //     }
+    
+    //     $store->products->transform(function ($product) {
+    //         $reviews = $product->reviews;
+    //         $reviewsCount = $reviews->count();
+    
+    //         $averageRating = $reviewsCount > 0 
+    //             ? round($reviews->sum('rating') / $reviewsCount, 2)
+    //             : 0;
+    
+    //         $product->average_rating = $averageRating;
+    //         $product->reviews_count = $reviewsCount;
+    
+    //         return $product;
+    //     });
+    
+    //     return response()->json($store);
+    // }
+
     public function show($id)
-    {
-        $store = Store::with([
-            'owner',
-            'categories',
-            'products.reviews', 
-            'reviews.user' 
-        ])->find($id);
-    
-        if (!$store) {
-            return response()->json(['message' => 'Store not found'], 404);
-        }
-    
-        $store->products->transform(function ($product) {
-            $reviews = $product->reviews;
-            $reviewsCount = $reviews->count();
-    
-            $averageRating = $reviewsCount > 0 
-                ? round($reviews->sum('rating') / $reviewsCount, 2)
-                : 0;
-    
-            $product->average_rating = $averageRating;
-            $product->reviews_count = $reviewsCount;
-    
-            return $product;
-        });
-    
-        return response()->json($store);
+{
+    $store = Store::with([
+        'owner',
+        'categories',
+        'products.reviews',
+        'products.category', // ⬅️ هذا هو المفتاح
+        'reviews.user'
+    ])->find($id);
+
+    if (!$store) {
+        return response()->json(['message' => 'Store not found'], 404);
     }
-    
+
+    $store->products->transform(function ($product) {
+        $reviews = $product->reviews;
+        $reviewsCount = $reviews->count();
+
+        $averageRating = $reviewsCount > 0 
+            ? round($reviews->sum('rating') / $reviewsCount, 2)
+            : 0;
+
+        $product->average_rating = $averageRating;
+        $product->reviews_count = $reviewsCount;
+
+        return $product;
+    });
+
+    return response()->json($store);
+} 
+  
+
     
 public function store(Request $request)
 {
@@ -197,5 +229,7 @@ public function store(Request $request)
                    ->get();
     return response()->json($stores);
 }
+
+
 
 }

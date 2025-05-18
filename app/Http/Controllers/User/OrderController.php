@@ -84,20 +84,24 @@ public function checkout(Request $request)
 public function index()
 {
     $user = auth()->user();
-    $orders = Order::with(['orderDetails.product', 'payment'])
-        ->where('user_id', $user->id)
-        ->get();
 
-        return response()->json(['orders' => $orders]);
+    $orders = Order::with([
+        'orderDetails.product.store', 
+        'payment'
+    ])
+    ->where('user_id', $user->id)
+    ->get();
 
+    return response()->json(['orders' => $orders]);
 }
+
 
 public function show($id)
 {
     $user = auth()->user();
 
     $order = Order::with([
-        'orderDetails.product',
+        'orderDetails.product.store',
         'orderDetails.designRequest',
         'payment'
     ])

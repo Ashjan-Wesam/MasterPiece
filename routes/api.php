@@ -59,7 +59,8 @@ use App\Http\Controllers\User\WishlistController;
     Route::post('/verify', [ResetPasswordController::class , 'verifyOtp']);
     Route::post('/resetPassword', [ResetPasswordController::class , 'resetPassword']);
     Route::post('/categories', [CategoryController::class, 'store']);
-    
+    Route::get('/high-rating', [UserReviewController::class, 'topRatedStores']);
+
 // Admin Routes
 Route::middleware(['auth:sanctum', 'isAdmin'])->prefix('admin')->group(function () {
 

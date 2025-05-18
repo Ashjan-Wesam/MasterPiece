@@ -142,7 +142,6 @@ public function stats($storeId)
         ? round($storeReviews->sum('rating') / $storeReviewsCount, 2) 
         : 0;
 
-    // ==== حساب تقييمات المنتجات المرتبطة بالمتجر ====
     $productIds = Product::where('store_id', $storeId)->pluck('id');
 
     $productReviews = ProductReview::whereIn('product_id', $productIds)->get();
@@ -161,6 +160,39 @@ public function stats($storeId)
         'product_average_rating' => $productAverageRating,
     ]);
 }
+
+public function topRatedStores()
+{
+    $stores = Store::with(['reviews', 'categories'])->get();
+
+    $topStores = $stores->filter(function ($store) {
+        $reviewsCount = $store->reviews->count();
+        $averageRating = $reviewsCount > 0
+            ? round($store->reviews->sum('rating') / $reviewsCount, 2)
+            : 0;
+
+        return $averageRating >= 4 && $reviewsCount >= 5;
+    })->map(function ($store) {
+        $reviewsCount = $store->reviews->count();
+        $averageRating = $reviewsCount > 0
+            ? round($store->reviews->sum('rating') / $reviewsCount, 2)
+            : 0;
+
+        return [
+            'id' => $store->id,
+            'name' => $store->store_name,
+            'logo' => $store->logo_url,
+            'average_rating' => $averageRating,
+            'reviews_count' => $reviewsCount,
+            'categories' => $store->categories->pluck('name'), 
+        ];
+    })->values();
+
+    return response()->json($topStores);
+}
+
+
+
 
 }
 

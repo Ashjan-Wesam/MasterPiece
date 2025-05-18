@@ -7,6 +7,7 @@ use App\Models\Product;
 use App\Models\Store;
 use App\Models\Order;
 use App\Models\SiteReview; 
+use App\Models\StoreReview; 
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
@@ -54,6 +55,9 @@ class HomeController extends Controller
         'categories' => $categories
     ]);
 }
+
+
+
 
 
 }
