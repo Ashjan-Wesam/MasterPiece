@@ -54,7 +54,7 @@ class ProductController extends Controller
         $store= Auth::user()->stores;
         $data['store_id'] = $store->id;
 
-        $data['request']  = $request->filled('is_custom_request') ? 'yes' : 'no';
+        // $data['request']  = $request->filled('is_custom_request') ? 'yes' : 'no';
 
         $product = Product::create($data);
 

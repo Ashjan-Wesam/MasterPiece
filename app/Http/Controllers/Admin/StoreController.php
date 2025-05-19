@@ -209,18 +209,49 @@ public function store(Request $request)
 }
 
 
-    public function destroy($id)
-    {
-        $store = Store::with('owner')->findOrFail($id);
+   public function destroy($id)
+{
+    $store = Store::with([
+        'owner',
+        'products.orderDetails',
+        'products.designRequests',
+        'products.reviews',
+        'products.cartProducts',
+        'discounts',
+        'categories',
+        'reviews',
+    ])->findOrFail($id);
 
-        $store->delete();
-
-        if ($store->owner) {
-            $store->owner->delete();
-        }
-
-        return response()->json(['message' => 'Store and owner deleted (soft delete).']);
+    // حذف كل منتج وما يتعلق به
+    foreach ($store->products as $product) {
+        $product->orderDetails()->delete();
+        $product->designRequests()->delete();
+        $product->reviews()->delete();
+        $product->cartProducts()->delete();
+        $product->wishlistUsers()->detach(); // many-to-many pivot
+        $product->delete(); // soft delete
     }
+
+    // حذف الخصومات
+    $store->discounts()->delete();
+
+    // حذف الريفيوز الخاصة بالمتجر نفسه
+    $store->reviews()->delete();
+
+    // حذف العلاقات مع التصنيفات (من جدول pivot)
+    $store->categories()->detach();
+
+    // حذف المتجر
+    $store->delete(); // soft delete
+
+    // حذف صاحب المتجر إن وجد
+    if ($store->owner) {
+        $store->owner->delete(); // soft delete
+    }
+
+    return response()->json(['message' => 'Store, its related data, and owner deleted successfully.']);
+}
+
 
     public function publicIndex()
 {

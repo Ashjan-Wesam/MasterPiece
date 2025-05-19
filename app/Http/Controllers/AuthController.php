@@ -11,81 +11,114 @@ use App\Models\Category;
 
 class AuthController extends Controller
 {
-    public function registerCustomer(Request $request)
-    {
-        $request->validate([
-            'full_name' => 'required|string',
-            'email' => 'required|email|unique:users',
-            'phone_number' => 'required|unique:users',
-            'password' => 'required|min:6'
-        ]);
+   public function registerCustomer(Request $request)
+{
+    $request->validate([
+        'full_name' => 'required|string',
+        'email' => 'required|email|unique:users',
+        'phone_number' => 'required|unique:users',
+        'password' => [
+            'required',
+            'min:8',
+            'regex:/^[A-Z][A-Za-z\d@$!%*?&]{7,}$/', 
+            'regex:/[!@#$%^&*(),.?":{}|<>]/' 
+        ],
+    ], [
+        'full_name.required' => 'Full name is required.',
+        'email.required' => 'Email is required.',
+        'email.email' => 'Please enter a valid email address.',
+        'email.unique' => 'This email is already taken.',
+        'phone_number.required' => 'Phone number is required.',
+        'phone_number.unique' => 'This phone number is already taken.',
+        'password.required' => 'Password is required.',
+        'password.min' => 'Password must be at least 8 characters.',
+        'password.regex' => 'Password must start with a capital letter and include at least one special character.',
+    ]);
 
-        $user = User::create([
-            'full_name' => $request->full_name,
-            'email' => $request->email,
-            'phone_number' => $request->phone_number,
-            'password' => Hash::make($request->password),
-            'role' => 'customer',
-        ]);
+    $user = User::create([
+        'full_name' => $request->full_name,
+        'email' => $request->email,
+        'phone_number' => $request->phone_number,
+        'password' => Hash::make($request->password),
+        'role' => 'customer',
+    ]);
 
-        $token = $user->createToken('auth_token')->plainTextToken;
+    $token = $user->createToken('auth_token')->plainTextToken;
 
-        return response()->json(['message' => 'Customer registered', 'token' => $token, 'user' => $user ]);
+    return response()->json([
+        'message' => 'Customer registered',
+        'token' => $token,
+        'user' => $user
+    ]);
+}
+
+
+    
+public function registerOwner(Request $request)
+{
+    $request->validate([
+        'full_name' => 'required|string',
+        'email' => 'required|email|unique:users,email',
+        'phone_number' => 'required|unique:users,phone_number',
+        'password' => 'required|min:6',
+        'store_name' => 'required|string|unique:stores,store_name',
+        'description' => 'nullable|string',
+        'category_ids' => 'nullable|array',
+        'category_ids.*' => 'exists:categories,id',
+        'new_categories' => 'nullable|array',
+        'new_categories.*' => 'string',
+        'logo_url' => 'required|image',
+    ]);
+
+    $user = User::create([
+        'full_name' => $request->full_name,
+        'email' => $request->email,
+        'phone_number' => $request->phone_number,
+        'password' => Hash::make($request->password),
+        'role' => 'owner',
+    ]);
+
+    if ($request->hasFile('logo_url')) {
+        $logoPath = $request->file('logo_url')->store('store_logos', 'public');
+    } else {
+        $logoPath = null; 
     }
 
-    
-    public function registerOwner(Request $request)
-    {
-        $request->validate([
-            'full_name' => 'required|string',
-            'email' => 'required|email|unique:users',
-            'phone_number' => 'required|unique:users',
-            'password' => 'required|min:6',
-            'store_name' => 'required|string',
-            'description' => 'nullable|string',
-            'category_ids' => 'nullable|array',
-            'category_ids.*' => 'exists:categories,id',
-            'new_categories' => 'nullable|string', // comma-separated string
-        ]);
-    
-        $user = User::create([
-            'full_name' => $request->full_name,
-            'email' => $request->email,
-            'phone_number' => $request->phone_number,
-            'password' => Hash::make($request->password),
-            'role' => 'owner',
-        ]);
-    
-        $store = Store::create([
-            'store_name' => $request->store_name,
-            'description' => $request->description,
-            'owner_id' => $user->id,
-        ]);
-    
-        if ($request->has('category_ids')) {
-            $store->categories()->attach($request->category_ids);
-        }
-    
-        if ($request->filled('new_categories')) {
-            $newCategories = explode(',', $request->new_categories);
-            foreach ($newCategories as $catName) {
-                $catName = trim($catName);
-                if ($catName) {
-                    $category = Category::firstOrCreate(['name' => $catName]);
-                    $store->categories()->attach($category->id);
-                }
+    $store = Store::create([
+        'store_name' => $request->store_name,
+        'description' => $request->description,
+        'owner_id' => $user->id,
+        'logo_url' => $logoPath,
+    ]);
+
+    $categoryIds = $request->category_ids ?? [];
+
+    if ($request->filled('new_categories')) {
+        foreach ($request->new_categories as $catName) {
+            $catName = trim($catName);
+            if ($catName !== '') {
+                $category = Category::firstOrCreate(['name' => $catName]);
+                $categoryIds[] = $category->id;
             }
         }
-    
-        $token = $user->createToken('auth_token')->plainTextToken;
-    
-        return response()->json([
-            'message' => 'Owner registered',
-            'token' => $token,
-            'user' => $user,
-            'store' => $store,
-        ]);
     }
+
+    $uniqueCategoryIds = array_unique($categoryIds);
+
+    if (!empty($uniqueCategoryIds)) {
+        $store->categories()->sync($uniqueCategoryIds);
+    }
+
+    $token = $user->createToken('auth_token')->plainTextToken;
+
+    return response()->json([
+        'message' => 'Owner registered',
+        'token' => $token,
+        'user' => $user,
+        'store' => $store,
+    ]);
+}
+
     
 
 

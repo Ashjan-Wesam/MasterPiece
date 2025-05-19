@@ -27,7 +27,6 @@ class CartController extends Controller
             return response()->json(['match' => true]);
         }
 
-        // Get store_id of first product in the cart
         $existingStoreId = $cart->cartProducts->first()->product->store_id;
 
         if ($existingStoreId != $storeIdToAdd) {
@@ -48,13 +47,11 @@ class CartController extends Controller
     $user = Auth::user();
     $product = Product::findOrFail($request->product_id);
 
-    // Get or create user's cart
     $cart = $user->cart ?? Cart::create(['user_id' => $user->id, 'added_at' => now()]);
 
-    // Check if product already in cart with same design_request_id
     $existing = $cart->cartProducts()
         ->where('product_id', $product->id)
-        ->where('design_request_id', $request->design_request_id) // match by design if exists
+        ->where('design_request_id', $request->design_request_id) 
         ->first();
 
     if ($existing) {
@@ -73,7 +70,6 @@ class CartController extends Controller
 }
 
 
-    // 3. Clear all products from the cart
     public function clearCart()
     {
         $user = Auth::user();

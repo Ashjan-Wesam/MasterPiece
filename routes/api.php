@@ -99,7 +99,7 @@ Route::middleware(['auth:sanctum', 'isAdmin'])->prefix('admin')->group(function 
 
     // Store Edit Routes
        Route::get('/stores-info', [StoreEditController::class, 'show']);
-       Route::post('/stores/{id}/update', [StoreEditController::class, 'update']);
+       Route::post('/stores-info/{id}/update', [StoreEditController::class, 'update']);
 
     // Categories Management Routes
        Route::get('/categories/{id}', [CategoryController::class, 'show']);
